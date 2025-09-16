@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dynamic Quote Generator</title>
+  <title>Dynamic Quote Generator with Categories</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -23,7 +23,7 @@
       font-size: 1.2em;
       min-height: 60px;
     }
-    button {
+    button, select {
       margin: 10px;
       padding: 10px 20px;
       font-size: 1em;
@@ -34,7 +34,7 @@
       color: white;
       transition: 0.3s;
     }
-    button:hover {
+    button:hover, select:hover {
       background: #0056b3;
     }
     input[type="file"] {
@@ -48,11 +48,19 @@
 
   <p id="quoteDisplay"></p>
 
+  <!-- Category Filter Dropdown -->
+  <select id="categoryFilter" onchange="filterQuotes()">
+    <option value="all">All Categories</option>
+  </select>
+
+  <br>
+
   <button onclick="newQuote()">New Quote</button>
-  <button onclick="addQuote(prompt('Enter a new quote:'))">Add Quote</button>
+  <button onclick="promptAddQuote()">Add Quote</button>
   <button onclick="exportToJsonFile()">Export Quotes</button>
 
   <br>
   <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
 </body>
 </html>
+
