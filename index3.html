@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Quote Generator with Sync</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #5c6bc0;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        
+        .quote-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+        }
+        
+        .sync-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            border-left: 1px solid #eee;
+        }
+        
+        .quote-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .quote-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .quote-text {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            color: #333;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        
+        .quote-author {
+            text-align: right;
+            font-size: 1.1rem;
+            color: #5c6bc0;
+            font-weight: 600;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #5c6bc0;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        button:hover {
+            background: #3f51b5;
+        }
+        
+        .sync-status {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .online {
+            background: #4caf50;
+        }
+        
+        .offline {
+            background: #f44336;
+        }
+        
+        .last-sync {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #777;
+        }
+        
+        .conflict-alert {
+            background: #ffecb3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .conflict-alert.visible {
+            display: block;
+        }
+        
+        .conflict-title {
+            color: #ff9800;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .quote-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .sync-controls {
+            margin-top: 20px;
+        }
+        
+        .quotes-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .quote-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #5c6bc0;
+        }
+        
+        .quote-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .quote-id {
+            font-weight: bold;
+            color: #5c6bc0;
+        }
+        
+        .quote-date {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sync-section {
+                border-left: none;
+                border-top: 1px solid #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dynamic Quote Generator</h1>
+            <p class="subtitle">Create, share, and sync inspirational quotes across devices</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="quote-section">
+                <div class="quote-card">
+                    <p class="quote-text" id="current-quote">Click the button to generate a random quote!</p>
+                    <p class="quote-author" id="quote-author"></p>
+                </div>
+                
+                <div class="buttons">
+                    <button id="generate-btn">Generate New Quote</button>
+                    <button id="save-btn">Save Quote</button>
+                    <button id="edit-btn">Edit Current Quote</button>
+                </div>
+                
+                <div class="quote-form" id="quote-form" style="display: none;">
+                    <h3>Edit Quote</h3>
+                    <div class="form-group">
+                        <label for="quote-text-input">Quote Text</label>
+                        <textarea id="quote-text-input"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quote-author-input">Author</label>
+                        <input type="text" id="quote-author-input">
+                    </div>
+                    <button id="save-edit-btn">Save Changes</button>
+                    <button id="cancel-edit-btn">Cancel</button>
+                </div>
+                
+                <div class="quotes-list" id="quotes-list">
+                    <h3>Your Saved Quotes</h3>
+                    <!-- Quotes will be populated here -->
+                </div>
+            </div>
+            
+            <div class="sync-section">
+                <div class="sync-status">
+                    <p><span class="status-indicator online" id="status-indicator"></span> <span id="sync-status-text">Connected to Server</span></p>
+                    <p class="last-sync" id="last-sync">Last sync: Never</p>
+                </div>
+                
+                <div class="conflict-alert" id="conflict-alert">
+                    <p class="conflict-title">Data Conflict Detected</p>
+                    <p>Your local quotes differ from the server version. How would you like to resolve this?</p>
+                    <div class="buttons">
+                        <button id="use-server-btn">Use Server Data</button>
+                        <button id="use-local-btn">Use Local Data</button>
+                        <button id="merge-btn">Merge Changes</button>
+                    </div>
+                </div>
+                
+                <div class="sync-controls">
+                    <h3>Sync Options</h3>
+                    <div class="buttons">
+                        <button id="sync-now-btn">Sync Now</button>
+                        <button id="view-server-btn">View Server Data</button>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-sync" checked>
+                            Auto-sync every 30 seconds
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="quotes-list" id="server-quotes-list" style="display: none;">
+                    <h3>Server Quotes</h3>
+                    <!-- Server quotes will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Dynamic Quote Generator with Server Sync | Simulated API Integration</p>
+        </footer>
+    </div>
+
+    <script>
+        // Quote data and state management
+        const state = {
+            quotes: JSON.parse(localStorage.getItem('quotes')) || [],
+            currentQuote: null,
+            lastSync: localStorage.getItem('lastSync') || null,
+            serverQuotes: [],
+            conflict: false,
+            autoSyncInterval: null
+        };
+
+        // DOM Elements
+        const elements = {
+            currentQuote: document.getElementById('current-quote'),
+            quoteAuthor: document.getElementById('quote-author'),
+            generateBtn: document.getElementById('generate-btn'),
+            saveBtn: document.getElementById('save-btn'),
+            editBtn: document.getElementById('edit-btn'),
+            quoteForm: document.getElementById('quote-form'),
+            quoteTextInput: document.getElementById('quote-text-input'),
+            quoteAuthorInput: document.getElementById('quote-author-input'),
+            saveEditBtn: document.getElementById('save-edit-btn'),
+            cancelEditBtn: document.getElementById('cancel-edit-btn'),
+            quotesList: document.getElementById('quotes-list'),
+            statusIndicator: document.getElementById('status-indicator'),
+            syncStatusText: document.getElementById('sync-status-text'),
+            lastSync: document.getElementById('last-sync'),
+            conflictAlert: document.getElementById('conflict-alert'),
+            useServerBtn: document.getElementById('use-server-btn'),
+            useLocalBtn: document.getElementById('use-local-btn'),
+            mergeBtn: document.getElementById('merge-btn'),
+            syncNowBtn: document.getElementById('sync-now-btn'),
+            viewServerBtn: document.getElementById('view-server-btn'),
+            autoSync: document.getElementById('auto-sync'),
+            serverQuotesList: document.getElementById('server-quotes-list')
+        };
+
+        // Sample quotes for generation
+        const sampleQuotes = [
+            { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+            { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+            { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+            { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+            { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+            { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
+            { text: "It is never too late to be what you might have been.", author: "George Eliot" },
+            { text: "Everything you can imagine is real.", author: "Pablo Picasso" },
+            { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+            { text: "Well done is better than well said.", author: "Benjamin Franklin" }
+        ];
+
+        // Initialize the application
+        function init() {
+            displayRandomQuote();
+            renderQuotesList();
+            updateSyncStatus();
+            setupEventListeners();
+            
+            // Set up auto-sync
+            if (elements.autoSync.checked) {
+                startAutoSync();
+            }
+            
+            // Simulate initial server sync
+            setTimeout(simulateInitialSync, 1500);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            elements.generateBtn.addEventListener('click', displayRandomQuote);
+            elements.saveBtn.addEventListener('click', saveCurrentQuote);
+            elements.editBtn.addEventListener('click', showEditForm);
+            elements.saveEditBtn.addEventListener('click', saveEditedQuote);
+            elements.cancelEditBtn.addEventListener('click', hideEditForm);
+            elements.syncNowBtn.addEventListener('click', manualSync);
+            elements.viewServerBtn.addEventListener('click', toggleServerQuotes);
+            elements.useServerBtn.addEventListener('click', resolveConflictWithServer);
+            elements.useLocalBtn.addEventListener('click', resolveConflictWithLocal);
+            elements.mergeBtn.addEventListener('click', resolveConflictWithMerge);
+            elements.autoSync.addEventListener('change', toggleAutoSync);
+        }
+
+        // Display a random quote
+        function displayRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * sampleQuotes.length);
+            state.currentQuote = sampleQuotes[randomIndex];
+            elements.currentQuote.textContent = state.currentQuote.text;
+            elements.quoteAuthor.textContent = `— ${state.currentQuote.author}`;
+        }
+
+        // Save the current quote to local storage
+        function saveCurrentQuote() {
+            if (!state.currentQuote) return;
+            
+            const newQuote = {
+                id: Date.now(),
+                text: state.currentQuote.text,
+                author: state.currentQuote.author,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            state.quotes.push(newQuote);
+            saveQuotesToLocalStorage();
+            renderQuotesList();
+            
+            // Simulate sync to server
+            simulateSyncToServer();
+        }
+
+        // Show the edit form
+        function showEditForm() {
+            if (!state.currentQuote) return;
+            
+            elements.quoteTextInput.value = state.currentQuote.text;
+            elements.quoteAuthorInput.value = state.currentQuote.author;
+            elements.quoteForm.style.display = 'block';
+        }
+
+        // Hide the edit form
+        function hideEditForm() {
+            elements.quoteForm.style.display = 'none';
+        }
+
+        // Save the edited quote
+        function saveEditedQuote() {
+            state.currentQuote.text = elements.quoteTextInput.value;
+            state.currentQuote.author = elements.quoteAuthorInput.value;
+            
+            elements.currentQuote.textContent = state.currentQuote.text;
+            elements.quoteAuthor.textContent = `— ${state.currentQuote.author}`;
+            
+            hideEditForm();
+        }
+
+        // Render the quotes list
+        function renderQuotesList() {
+            elements.quotesList.innerHTML = '<h3>Your Saved Quotes</h3>';
+            
+            if (state.quotes.length === 0) {
+                elements.quotesList.innerHTML += '<p>No quotes saved yet. Save some quotes to see them here!</p>';
+                return;
+            }
+            
+            state.quotes.forEach(quote => {
+                const quoteElement = document.createElement('div');
+                quoteElement.className = 'quote-item';
+                quoteElement.innerHTML = `
+                    <div class="quote-item-header">
+                        <span class="quote-id">Quote #${quote.id}</span>
+                        <span class="quote-date">${new Date(quote.lastUpdated).toLocaleString()}</span>
+                    </div>
+                    <p>${quote.text}</p>
+                    <p><strong>— ${quote.author}</strong></p>
+                `;
+                elements.quotesList.appendChild(quoteElement);
+            });
+        }
+
+        // Render server quotes list
+        function renderServerQuotesList() {
+            elements.serverQuotesList.innerHTML = '<h3>Server Quotes</h3>';
+            
+            if (state.serverQuotes.length === 0) {
+                elements.serverQuotesList.innerHTML += '<p>No quotes on server yet.</p>';
+                return;
+            }
+            
+            state.serverQuotes.forEach(quote => {
+                const quoteElement = document.createElement('div');
+                quoteElement.className = 'quote-item';
+                quoteElement.innerHTML = `
+                    <div class="quote-item-header">
+                        <span class="quote-id">Quote #${quote.id}</span>
+                        <span class="quote-date">${new Date(quote.lastUpdated).toLocaleString()}</span>
+                    </div>
+                    <p>${quote.text}</p>
+                    <p><strong>— ${quote.author}</strong></p>
+                `;
+                elements.serverQuotesList.appendChild(quoteElement);
+            });
+        }
+
+        // Save quotes to local storage
+        function saveQuotesToLocalStorage() {
+            localStorage.setItem('quotes', JSON.stringify(state.quotes));
+        }
+
+        // Update sync status display
+        function updateSyncStatus() {
+            if (state.lastSync) {
+                elements.lastSync.textContent = `Last sync: ${new Date(state.lastSync).toLocaleString()}`;
+            } else {
+                elements.lastSync.textContent = 'Last sync: Never';
+            }
+        }
+
+        // Toggle server quotes view
+        function toggleServerQuotes() {
+            if (elements.serverQuotesList.style.display === 'none') {
+                elements.serverQuotesList.style.display = 'block';
+                renderServerQuotesList();
+                elements.viewServerBtn.textContent = 'Hide Server Data';
+            } else {
+                elements.serverQuotesList.style.display = 'none';
+                elements.viewServerBtn.textContent = 'View Server Data';
+            }
+        }
+
+        // Simulate initial sync with server
+        function simulateInitialSync() {
+            // Simulate network delay
+            setTimeout(() => {
+                // In a real app, this would be an API call
+                const serverQuotes = JSON.parse(localStorage.getItem('serverQuotes')) || [];
+                
+                if (serverQuotes.length > 0) {
+                    state.serverQuotes = serverQuotes;
+                    
+                    // Check for conflicts
+                    if (JSON.stringify(state.quotes) !== JSON.stringify(state.serverQuotes)) {
+                        showConflict();
+                    } else {
+                        // No conflict, update last sync time
+                        state.lastSync = new Date().toISOString();
+                        localStorage.setItem('lastSync', state.lastSync);
+                        updateSyncStatus();
+                    }
+                } else {
+                    // First time sync, initialize server with local quotes
+                    localStorage.setItem('serverQuotes', JSON.stringify(state.quotes));
+                    state.serverQuotes = [...state.quotes];
+                    state.lastSync = new Date().toISOString();
+                    localStorage.setItem('lastSync', state.lastSync);
+                    updateSyncStatus();
+                }
+            }, 1000);
+        }
+
+        // Simulate sync to server
+        function simulateSyncToServer() {
+            // Simulate network delay
+            setTimeout(() => {
+                // In a real app, this would be an API call
+                const serverQuotes = JSON.parse(localStorage.getItem('serverQuotes')) || [];
+                
+                // Check for conflicts
+                if (JSON.stringify(state.quotes) !== JSON.stringify(serverQuotes)) {
+                    showConflict();
+                } else {
+                    // No conflict, update server with local quotes
+                    localStorage.setItem('serverQuotes', JSON.stringify(state.quotes));
+                    state.serverQuotes = [...state.quotes];
+                    state.lastSync = new Date().toISOString();
+                    localStorage.setItem('lastSync', state.lastSync);
+                    updateSyncStatus();
+                    
+                    // Show success message
+                    showTempMessage('Sync successful!', 'success');
+                }
+            }, 1000);
+        }
+
+        // Manual sync trigger
+        function manualSync() {
+            showTempMessage('Syncing with server...', 'info');
+            simulateSyncToServer();
+        }
+
+        // Show conflict UI
+        function showConflict() {
+            state.conflict = true;
+            elements.conflictAlert.classList.add('visible');
+        }
+
+        // Hide conflict UI
+        function hideConflict() {
+            state.conflict = false;
+            elements.conflictAlert.classList.remove('visible');
+        }
+
+        // Resolve conflict using server data
+        function resolveConflictWithServer() {
+            state.quotes = [...state.serverQuotes];
+            saveQuotesToLocalStorage();
+            renderQuotesList();
+            hideConflict();
+            
+            state.lastSync = new Date().toISOString();
+            localStorage.setItem('lastSync', state.lastSync);
+            updateSyncStatus();
+            
+            showTempMessage('Conflict resolved using server data.', 'success');
+        }
+
+        // Resolve conflict using local data
+        function resolveConflictWithLocal() {
+            localStorage.setItem('serverQuotes', JSON.stringify(state.quotes));
+            state.serverQuotes = [...state.quotes];
+            hideConflict();
+            
+            state.lastSync = new Date().toISOString();
+            localStorage.setItem('lastSync', state.lastSync);
+            updateSyncStatus();
+            
+            showTempMessage('Conflict resolved using local data.', 'success');
+        }
+
+        // Resolve conflict by merging data
+        function resolveConflictWithMerge() {
+            // Simple merge strategy: combine both arrays and remove duplicates
+            const mergedQuotes = [...state.quotes];
+            
+            state.serverQuotes.forEach(serverQuote => {
+                const exists = mergedQuotes.some(localQuote => localQuote.id === serverQuote.id);
+                if (!exists) {
+                    mergedQuotes.push(serverQuote);
+                }
+            });
+            
+            state.quotes = mergedQuotes;
+            saveQuotesToLocalStorage();
+            renderQuotesList();
+            
+            localStorage.setItem('serverQuotes', JSON.stringify(mergedQuotes));
+            state.serverQuotes = [...mergedQuotes];
+            hideConflict();
+            
+            state.lastSync = new Date().toISOString();
+            localStorage.setItem('lastSync', state.lastSync);
+            updateSyncStatus();
+            
+            showTempMessage('Conflict resolved by merging data.', 'success');
+        }
+
+        // Start auto-sync
+        function startAutoSync() {
+            state.autoSyncInterval = setInterval(() => {
+                simulateSyncToServer();
+            }, 30000); // Sync every 30 seconds
+        }
+
+        // Stop auto-sync
+        function stopAutoSync() {
+            if (state.autoSyncInterval) {
+                clearInterval(state.autoSyncInterval);
+                state.autoSyncInterval = null;
+            }
+        }
+
+        // Toggle auto-sync
+        function toggleAutoSync() {
+            if (elements.autoSync.checked) {
+                startAutoSync();
+            } else {
+                stopAutoSync();
+            }
+        }
+
+        // Show temporary message
+        function showTempMessage(message, type) {
+            const messageEl = document.createElement('div');
+            messageEl.textContent = message;
+            messageEl.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            `;
+            
+            if (type === 'success') {
+                messageEl.style.background = '#4caf50';
+            } else if (type === 'error') {
+                messageEl.style.background = '#f44336';
+            } else {
+                messageEl.style.background = '#2196f3';
+            }
+            
+            document.body.appendChild(messageEl);
+            
+            setTimeout(() => {
+                document.body.removeChild(messageEl);
+            }, 3000);
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
